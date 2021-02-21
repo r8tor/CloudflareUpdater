@@ -123,3 +123,7 @@ Add a crontab record to make it update your DNS record periodically.
 Example:
 
 ```@hourly /usr/sbin/cloudfare_updater```
+
+
+# I want to Contribute
+Feel free to raise issues or submit a pull request with any changes you'd like to see here. 
