@@ -1,0 +1,28 @@
+#!/bin/bash
+#exit if user is not root
+[ "$(id -u)" != "0" ] && { echo "For better security only root can read the configuration files. Must be run as root! Aborting"; exit 1;}
+
+while getopts ":l" option
+do
+        case ${option} in
+                l)
+                        source /etc/cloudflare.conf
+                        curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE}/dns_records" \
+                             -H "Authorization: Bearer ${API_TOKEN}" \
+                             -H "Content-Type: application/json" | jq '.result[] | "\(.id) \(.name) \(.type)"'
+                ;;
+                *)
+                        #Read config file
+                        source /etc/cloudflare.conf
+                        #Determine IP Address
+                        MY_IP=$(dig +short myip.opendns.com @resolver1.opendns.com)
+
+                        #Call Cloudflare API and update record
+                        curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${ZONE}/dns_records/${RECORD}" \
+                                -H "Authorization: Bearer ${API_TOKEN}" \
+                                -H "Content-Type: application/json"  \
+                                --data "{\"type\":\"${TYPE}\",\"name\":\"${NAME}\",\"content\":\"${MY_IP}\",\"ttl\":${TTL},\"proxied\":${PROXIED}}" | jq >> /var/log/cloudflare.log
+        ;;
+        esac
+done
+~
