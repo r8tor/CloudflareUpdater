@@ -2,26 +2,55 @@
 #exit if user is not root
 [ "$(id -u)" != "0" ] && { echo "For better security only root can read the configuration files. Must be run as root! Aborting"; exit 1;}
 
-while getopts ":l" option
-do
-        case ${option} in
-                l)
-                        source /etc/cloudflare.conf
-                        curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE}/dns_records" \
-                             -H "Authorization: Bearer ${API_TOKEN}" \
-                             -H "Content-Type: application/json" | jq '.result[] | "\(.id) \(.name) \(.type)"'
-                ;;
-                *)
-                        #Read config file
-                        source /etc/cloudflare.conf
-                        #Determine IP Address
-                        MY_IP=$(dig +short myip.opendns.com @resolver1.opendns.com)
+# Function: Print a help message.
+usage() {
+  echo "TODO"
+}
 
-                        #Call Cloudflare API and update record
-                        curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${ZONE}/dns_records/${RECORD}" \
-                                -H "Authorization: Bearer ${API_TOKEN}" \
-                                -H "Content-Type: application/json"  \
-                                --data "{\"type\":\"${TYPE}\",\"name\":\"${NAME}\",\"content\":\"${MY_IP}\",\"ttl\":${TTL},\"proxied\":${PROXIED}}" | jq >> /var/log/cloudflare.log
-        ;;
-        esac
-done
+# Function: Exit with error.
+exit_abnormal() {                         
+  usage
+  exit 1
+}
+
+list_dns_records() {
+    source /etc/cloudflare.conf                    
+    curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE}/dns_records" \
+    -H "Authorization: Bearer ${API_TOKEN}" \
+    -H "Content-Type: application/json" | jq '.result[] | "\(.id) \(.name) \(.type)"'
+    exit 0
+}
+
+update_dns_record() {
+    #Read config file
+    source /etc/cloudflare.conf
+    #Determine IP Address
+    MY_IP=$(dig +short myip.opendns.com @resolver1.opendns.com)
+
+    #Call Cloudflare API and update record
+    curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${ZONE}/dns_records/${RECORD}" \
+        -H "Authorization: Bearer ${API_TOKEN}" \
+        -H "Content-Type: application/json"  \
+        --data "{\"type\":\"${TYPE}\",\"name\":\"${NAME}\",\"content\":\"${MY_IP}\",\"ttl\":${TTL},\"proxied\":${PROXIED}}" | jq >> /var/log/cloudflare.log
+    exit 0
+}
+
+if [ $# -eq 0 ];
+then
+    usage
+    exit 0
+else
+  while getopts ":lu" option; do
+      case "${option}" in
+          l)
+              list_dns_records
+              ;;
+          u)
+              update_dns_record                      
+          ;;
+          *)
+              usage
+          ;;
+          esac
+  done
+fi
