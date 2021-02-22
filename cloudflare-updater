@@ -4,7 +4,11 @@
 
 # Function: Print a help message.
 usage() {
-  echo "TODO"
+  echo "usage: cloudflare-updater [options]"
+  echo "options:"
+  echo "  -l    List DNS Records using Zone and API Key from configuration file"
+  echo "  -u    Update the DNS Record defined in the configuration file with your current public IP"
+  echo "  -h    Show this help message"
 }
 
 # Function: Exit with error.
@@ -13,6 +17,7 @@ exit_abnormal() {
   exit 1
 }
 
+#List DNS Records using Zone and API Key from configuration file
 list_dns_records() {
     source /etc/cloudflare.conf                    
     curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${ZONE}/dns_records" \
@@ -21,6 +26,7 @@ list_dns_records() {
     exit 0
 }
 
+#Update the DNS Record defined in the configuration file with your current public IP
 update_dns_record() {
     #Read config file
     source /etc/cloudflare.conf
@@ -47,6 +53,9 @@ else
               ;;
           u)
               update_dns_record                      
+          ;;
+          h)
+              usage
           ;;
           *)
               usage
